@@ -4,8 +4,6 @@ const express = require('express');
 const apicache = require('apicache');
 
 const app = express();
-const cache = apicache.middleware;
-
 const port = 3000;
 app.listen(port, () => console.log(`Server is listening on port: ${port}`));
 
@@ -24,8 +22,11 @@ const resultData = {
     numberOfRecoveredToday: 0
 };
 
-app.get('/tc-covid19', cache('5 minutes'), (req, res) => {
+const cache = apicache.middleware;
+const onlyStatus200 = (req, res) => res.statusCode === 200;
+const cacheSuccesses = cache('5 minutes', onlyStatus200);
 
+app.get('/tc-covid19', cacheSuccesses, (req, res) => {
     fetchData(url)
         .then((response) => {
             const html = response.data;
@@ -44,7 +45,7 @@ app.get('/tc-covid19', cache('5 minutes'), (req, res) => {
             resultData.numberOfDeathToday = $(statsTable[8]).find('span').eq(1).text().trim();
             resultData.numberOfRecoveredToday = $(statsTable[9]).find('span').eq(1).text().trim();
 
-            console.log('resultData', resultData);
+            console.log(new Date(), 'resultData', resultData);
             res.json(resultData);
         }).catch((err) => {
         console.log('err', err);
